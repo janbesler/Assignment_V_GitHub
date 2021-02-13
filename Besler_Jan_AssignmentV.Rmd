@@ -22,9 +22,17 @@ https://app.ticketmaster.com/{package}/{version}/{resource}.json?apikey=**{API k
 ```
 
 ## API key
-The API key is a publicly available on the API Explorer () and is stored seperately on a file on a local machine.
+The API key is a publicly available on the API Explorer (https://developer.ticketmaster.com/api-explorer/v2/) and is stored seperately on a file on a local machine. Next we prepare the required libraries for the API and its usage on plots etc.
 
-```{r pressure, echo=FALSE}
+```{r packages, echo=FALSE}
+install.packages("jsonlite")
+install.packages("httr")
+
+library(ggplot2)
+library(tidyr)
+library(dplyr)
+library(jsonlite)
+library(httr)
 
 ```
 
