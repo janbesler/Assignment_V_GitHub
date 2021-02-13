@@ -1,0 +1,30 @@
+---
+title: "Besler_Jan_AssignmentV"
+author: "Jan Besler"
+date: "13/02/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## API Ticketmaster
+First we look at the documentation of the Ticketmaster API (https://developer.ticketmaster.com/products-and-docs/apis/getting-started/) to get the necessary information on how the database is structured and what the "rules" are, e.g. rate limits and ToS.
+The rate limit shown on the page lies at 5000 calls per day as of 13/02/2021.
+
+```{r api}
+
+https://app.ticketmaster.com/{package}/{version}/{resource}.json?apikey=**{API key}
+
+~/.eigenwerke/api/api_assignment5
+
+```
+
+## API key
+The API key is a publicly available on the API Explorer () and is stored seperately on a file on a local machine.
+
+```{r pressure, echo=FALSE}
+
+```
+
