@@ -14,19 +14,17 @@ First we look at the documentation of the Ticketmaster API (https://developer.ti
 The rate limit shown on the page lies at 5000 calls per day as of 13/02/2021.
 
 ```{r api}
-
-https://app.ticketmaster.com/{package}/{version}/{resource}.json?apikey=**{API key}
-
-~/.eigenwerke/api/api_assignment5
+A5_key <- source("~/.eigenwerke/api/api_assignment5.R")
 
 ```
 
 ## API key
-The API key is a publicly available on the API Explorer (https://developer.ticketmaster.com/api-explorer/v2/) and is stored seperately on a file on a local machine. Next we prepare the required libraries for the API and its usage on plots etc.
+The API key is a publicly available on the API Explorer (https://developer.ticketmaster.com/api-explorer/v2/) and is stored separately on a file on a local machine. Next we prepare the required libraries for the API and its usage on plots etc.
 
 ```{r packages, echo=FALSE}
-install.packages("jsonlite")
-install.packages("httr")
+#install.packages("jsonlite")
+#install.packages("httr")
+
 
 library(ggplot2)
 library(tidyr)
@@ -36,3 +34,23 @@ library(httr)
 
 ```
 
+## basic API Interaction
+In the first step the results from the first site are printed and are compiled into a data frame.
+The output looks like this:
+
+``` {r api_basic}
+
+re_venue <- GET(url  = "https://app.ticketmaster.com/discovery/v1/venues.json?apikey=",
+                    query = list(apikey = A5_key[1]))
+
+```
+
+##API advanced
+
+Since the first basic step only shows the results for the first 20 results, hence the first site. The following part is resolving this problem by iterating the pagenumbers until there are less than 20 values on a page.
+
+``` {r api_advanced}
+
+
+
+```
