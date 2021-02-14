@@ -39,11 +39,14 @@ In the first step the results from the first site are printed and are compiled i
 The output looks like this:
 
 ``` {r api_basic}
-
-re_venue <- GET(url  = "https://app.ticketmaster.com/discovery/v1/venues.json?apikey=",
-                    query = list(apikey = A5_key[1]))
-
+res_venue <- GET(url  = "https://app.ticketmaster.com/discovery/v2/venues.json?",
+                    query = list(apikey = A5_key[1],
+                                 countryCode = "DE"))
+content_venue_DE <- jsonlite::fromJSON(content(res_venue, as = "text"))
+content_venue_DE
 ```
+
+IF we use the content function on the venue data for Germany we get a list of 3 containing further lists with the names "_embedded", "_links" and "page". The last one is showing metainformation on the performed GET-request and contains the size, number of elements and number of pages. While the object "_links" contains used links to get the information, for example the link for the first and last entry in the database. The first object is a list itself as well and contains the actually desired information for the first 20 venues in Germany with all the respective information stored in the database.
 
 ##API advanced
 
