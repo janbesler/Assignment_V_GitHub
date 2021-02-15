@@ -25,7 +25,9 @@ The API key is a publicly available on the API Explorer (https://developer.ticke
 #install.packages("jsonlite")
 #install.packages("httr")
 #install.packages("rlist")
+install.packages("maps")
 
+library(maps)
 library(ggplot2)
 library(tidyr)
 library(dplyr)
@@ -41,13 +43,28 @@ The output looks like this:
 ``` {r api_basic}
 res_venue <- GET(url  = "https://app.ticketmaster.com/discovery/v2/venues.json?",
                     query = list(apikey = A5_key[1],
+                                 locale = "*",
                                  countryCode = "DE"))
 content_venue_DE <- jsonlite::fromJSON(content(res_venue, as = "text"))
-df_venue_De <- data.frame(content_venue_DE$'_embedded'$venues)
-df_venue_DE <- subset(df_venue_De, select = c(1,8,10,12,5,13), drop = FALSE)
+df_venue_DE <- data.frame(content_venue_DE$'_embedded'$venues)
+
 ```
 
-IF we use the content function on the venue data for Germany we get a list of 3 containing further lists with the names "_embedded", "_links" and "page". The last one is showing metainformation on the performed GET-request and contains the size, number of elements and number of pages. While the object "_links" contains used links to get the information, for example the link for the first and last entry in the database. The first object is a list itself as well and contains the actually desired information for the first 20 venues in Germany with all the respective information stored in the database.
+If we use the content function on the venue data for Germany we get a list of 19 Variables. But some of the required information is stored in a data frame itself inside the first data frame. This applies for the city-, address- and location-variable.
+
+``` {r api_basic_slicing}
+df_venue_basic <- data.frame(
+            name = df_venue_DE$name,
+            city = df_venue_DE$city$name,
+            postalCode = df_venue_DE$postalCode,
+            address = df_venue_DE$address$line1,
+            url = df_venue_DE$url,
+            longitude = df_venue_DE$location$longitude,
+            latitude = df_venue_DE$location$latitude
+        )
+df_venue_basic
+```
+Now the first 20 values are in the desired standard data frame format.
 
 ##API advanced
 
@@ -55,6 +72,148 @@ Since the first basic step only shows the results for the first 20 results, henc
 
 ``` {r api_advanced}
 
+info_DE <- content(GET(url  = "https://app.ticketmaster.com/discovery/v2/venues.json?",
+                    query = list(apikey = A5_key[1],
+                                 locale = "*",
+                                 countryCode = "DE",
+                                 size = 50)))
+pages_DE <- info_DE$page$totalPages #set size to 20 if using this
+N_DE <- 200 #info_DE$page$totalElements for a better solution
 
+df_venue_advanced <- data.frame(
+            name = character(N_DE),
+            city = character(N_DE),
+            postalCode = numeric(N_DE),
+            address = character(N_DE),
+            url = character(N_DE),
+            longitude = numeric(N_DE),
+            latitude = numeric(N_DE),
+            stringsAsFactors = FALSE
+            )
+
+for (i in 1:5) {
+  iterated_results_DE <- GET(url  = "https://app.ticketmaster.com/discovery/v2/venues.json?",
+                    query = list(apikey = A5_key[1],
+                                 locale = "*",
+                                 countryCode = "DE",
+                                 size = 50,
+                                 page = i-1))
+
+  iterated_venue_DE <- jsonlite::fromJSON(content(iterated_results_DE, as = "text"))[['_embedded']][['venues']]
+
+  df_venue_advanced[((i-1)*50+1):(i*50),] <- data.frame(
+                                           iterated_venue_DE$name,
+                                           iterated_venue_DE$city$name,
+                                           iterated_venue_DE$postalCode,
+                                           iterated_venue_DE$address$line1,
+                                           iterated_venue_DE$url,
+                                           iterated_venue_DE$location$longitude,
+                                           iterated_venue_DE$location$latitude
+                                           )
+  Sys.sleep(0.75)
+}
+
+df_venue_advanced
+
+#Moritz Solution:
+#rows <- as.numeric(nrow(iterated_venue_DE))
+#if(i < pages_DE) {
+#  df_venue_advanced[((i-1)*50+1):(i*rows),] <- data.frame(
+#                                          iterated_venue_DE$name,
+#                                          iterated_venue_DE$city$name,
+#                                          iterated_venue_DE$postalCode,
+#                                          iterated_venue_DE$address$line1,
+#                                          iterated_venue_DE$url,
+#                                          iterated_venue_DE$location$longitude,
+#                                          iterated_venue_DE$location$latitude
+#                                          )
+#} else {
+#  df_venue_advanced[((i-1)*50+1):((i-1)*50 + rows),] <- data.frame(
+#                                          iterated_venue_DE$name,
+#                                          iterated_venue_DE$city$name,
+#                                          iterated_venue_DE$postalCode,
+#                                          iterated_venue_DE$address$line1,
+#                                          iterated_venue_DE$url,
+#                                          iterated_venue_DE$location$longitude,
+#                                          iterated_venue_DE$location$latitude
+#                                          )
+#}
 
 ```
+##acknowledging my ignorance 
+
+for some reason I don't fully understand my code stops working with the second last line.
+However it works somehow for the first 200 values until the error "Error in x[[jj]][iseq] <- vjj : replacement has length zero" appears.
+Even trying to replicate the code of fellow students is apparently not working. 
+Therefor I abandon this task at this point & workout the following task for all the other countries with the code that I used so far. Also my map will look different with less points.
+
+
+##event locations
+
+
+``` {r DE_plot}
+map_DE <- na.omit(df_venue_advanced)
+map_DE <- map_DE[!(df_venue_advanced$longitude < "5.866944"),] %>% na.omit()
+map_DE <- map_DE[!(df_venue_advanced$longitude > "15.043611"),] %>% na.omit()
+map_DE <- map_DE[!(df_venue_advanced$latitude < "47.271679"),] %>% na.omit()
+map_DE <- map_DE[!(df_venue_advanced$latitude > "55.0846"),] %>% na.omit()
+
+
+[!(df_venue_advanced$longitude < "5.866944" | df_venue_advanced$longitude < "15.043611" | df_venue_advanced$latitude < "47.271679" | df_venue_advanced$latitude > "55.0846"),]
+
+ggplot(map_DE) +
+geom_polygon(
+aes(x = long, y = lat, group = group), data = map_data("world", region = "Germany"),
+fill = "grey90",color = "black") +
+theme_void() +
+coord_quickmap() +
+labs(title = "Event locations across Germany", caption = "Source: ticketmaster.com") +
+theme(title = element_text(size=8, face='bold'),
+plot.caption = element_text(face = "italic"))
+
+```
+
+##other countries
+
+``` {r API_other_countries}
+
+info_DE <- content(GET(url  = "https://app.ticketmaster.com/discovery/v2/venues.json?",
+                    query = list(apikey = A5_key[1],
+                                 locale = "*",
+                                 countryCode = "DE",
+                                 size = 50)))
+pages_DE <- info_DE$page$totalPages #set size to 20 if using this
+N_DE <- info_DE$page$totalElements
+
+df_venue_advanced <- data.frame(
+            name = character(N_DE),
+            city = character(N_DE),
+            postalCode = integer(N_DE),
+            address = character(N_DE),
+            url = character(N_DE),
+            longitude = numeric(N_DE),
+            latitude = numeric(N_DE),
+            stringsAsFactors = FALSE
+)
+
+for (i in 1:pages_DE) {
+  iterated_results_DE <- GET(url  = "https://app.ticketmaster.com/discovery/v2/venues.json?",
+                    query = list(apikey = A5_key[1],
+                                 locale = "*",
+                                 countryCode = "DE",
+                                 size = 50,
+                                 page = i-1))
+
+  iterated_venue_DE <- jsonlite::fromJSON(content(iterated_results_DE, as = "text"))[['_embedded']][['venues']]
+
+  
+  df_venue_advanced[((i-1)*50+1):(i*50),] <-iterated_venue_DE
+
+  Sys.sleep(0.75)
+}
+
+df_venue_advanced
+
+```
+
+
