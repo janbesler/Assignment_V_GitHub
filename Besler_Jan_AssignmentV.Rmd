@@ -24,14 +24,14 @@ The API key is a publicly available on the API Explorer (https://developer.ticke
 ```{r packages, echo=FALSE}
 #install.packages("jsonlite")
 #install.packages("httr")
-
+#install.packages("rlist")
 
 library(ggplot2)
 library(tidyr)
 library(dplyr)
 library(jsonlite)
 library(httr)
-
+library(rlist)
 ```
 
 ## basic API Interaction
@@ -43,7 +43,8 @@ res_venue <- GET(url  = "https://app.ticketmaster.com/discovery/v2/venues.json?"
                     query = list(apikey = A5_key[1],
                                  countryCode = "DE"))
 content_venue_DE <- jsonlite::fromJSON(content(res_venue, as = "text"))
-content_venue_DE
+df_venue_De <- data.frame(content_venue_DE$'_embedded'$venues)
+df_venue_DE <- subset(df_venue_De, select = c(1,8,10,12,5,13), drop = FALSE)
 ```
 
 IF we use the content function on the venue data for Germany we get a list of 3 containing further lists with the names "_embedded", "_links" and "page". The last one is showing metainformation on the performed GET-request and contains the size, number of elements and number of pages. While the object "_links" contains used links to get the information, for example the link for the first and last entry in the database. The first object is a list itself as well and contains the actually desired information for the first 20 venues in Germany with all the respective information stored in the database.
