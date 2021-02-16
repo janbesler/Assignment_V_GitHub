@@ -224,9 +224,8 @@ library(rlist)</code></pre>
                     query = list(apikey = A5_key[1],
                                  locale = &quot;*&quot;,
                                  countryCode = &quot;DE&quot;))
-content_venue_DE &lt;- jsonlite::fromJSON(content(res_venue, as = &quot;text&quot;))</code></pre>
-<pre><code>## No encoding supplied: defaulting to UTF-8.</code></pre>
-<pre class="r"><code>df_venue_DE &lt;- data.frame(content_venue_DE$&#39;_embedded&#39;$venues)</code></pre>
+content_venue_DE &lt;- jsonlite::fromJSON(content(res_venue, as = &quot;text&quot;))
+df_venue_DE &lt;- data.frame(content_venue_DE$&#39;_embedded&#39;$venues)</code></pre>
 <p>If we use the content function on the venue data for Germany we get a list of 19 Variables. But some of the required information is stored in a data frame itself inside the first data frame. This applies for the city-, address- and location-variable.</p>
 <pre class="r"><code>df_venue_basic &lt;- data.frame(
             name = df_venue_DE$name,
@@ -238,8 +237,15 @@ content_venue_DE &lt;- jsonlite::fromJSON(content(res_venue, as = &quot;text&quo
             latitude = df_venue_DE$location$latitude
         )
 glimpse(df_venue_basic)</code></pre>
-<pre><code>## Rows: 0
-## Columns: 0</code></pre>
+<pre><code>## Rows: 20
+## Columns: 7
+## $ name       &lt;chr&gt; &quot;Gruenspan&quot;, &quot;Philharmonie (Großer Saal)&quot;, &quot;Beatpol&quot;, &quot;MHP…
+## $ city       &lt;chr&gt; &quot;Hamburg&quot;, &quot;Berlin&quot;, &quot;Dresden&quot;, &quot;Ludwigsburg&quot;, &quot;Berlin&quot;, &quot;…
+## $ postalCode &lt;chr&gt; &quot;22767&quot;, &quot;10785&quot;, &quot;01157&quot;, &quot;71638&quot;, &quot;12435&quot;, &quot;79108&quot;, &quot;701…
+## $ address    &lt;chr&gt; &quot;Grosse Freiheit 58&quot;, &quot;Herbert-von-Karajan-Straße 1&quot;, &quot;Alt…
+## $ url        &lt;chr&gt; &quot;http://www.ticketmaster.de/venue/287155&quot;, &quot;https://www.ti…
+## $ longitude  &lt;chr&gt; &quot;9.958075&quot;, &quot;13.36896&quot;, &quot;13.67471&quot;, &quot;9.1824&quot;, &quot;13.42054&quot;, …
+## $ latitude   &lt;chr&gt; &quot;53.551885&quot;, &quot;52.51007&quot;, &quot;51.06498&quot;, &quot;48.89121&quot;, &quot;52.49945…</code></pre>
 <p>Now the first 20 values are in the desired standard data frame format.</p>
 </div>
 <div id="api-advanced" class="section level2">
@@ -499,8 +505,12 @@ it_venue &lt;- ggplot() +
   plot.caption = element_text(face = &quot;italic&quot;)) +
   geom_point(data = map_IT, aes(x = longitude, y = latitude), na.rm = TRUE)
 it_venue</code></pre>
-<p>It again seems like previously, that emitting false coordinates isn’t working as intended since for example row 126 in map_BE has a values outside of the perimeters declared previously to the plotting. Same result apply towards the map of Sweden. While the map for Italy works perfectly fine</p>
+<p>It again seems like previously, that emitting false coordinates isn’t working as intended since for example row 126 in map_BE has a values outside of the perimeters declared previously to the plotting. Same result apply towards the map of Sweden. While the map for Italy works perfectly fine.</p>
 </div>
+</div>
+<div id="github" class="section level2">
+<h2>GitHub</h2>
+<p>I pushed my progress regularly to GitHub and tried to give it meaningful comments. The data can be found on: <a href="https://github.com/v0lker42/Assignment_V_GitHub" class="uri">https://github.com/v0lker42/Assignment_V_GitHub</a></p>
 </div>
 
 
