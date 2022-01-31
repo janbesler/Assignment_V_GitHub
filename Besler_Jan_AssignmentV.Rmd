@@ -4,29 +4,18 @@ author: "Jan Besler"
 date: "13/02/2021"
 output: html_document
 ---
-
 ```{r setup, include=FALSE}
+knitr::opts_knit$set(root.dir = "/home/jan/Uni/Data_Science/Project_Management/Assignments_DSPM/")
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## API Ticketmaster
-First we look at the documentation of the Ticketmaster API (https://developer.ticketmaster.com/products-and-docs/apis/getting-started/) to get the necessary information on how the database is structured and what the "rules" are, e.g. rate limits and ToS.
-The rate limit shown on the page lies at 5000 calls per day as of 13/02/2021.
+### Setup
+Before starting workspace is cleared and all necessary libraries are loaded.
+```{r libraries, echo=TRUE, message=FALSE, warning=FALSE}
+# clear workspace
+rm(list = ls())
 
-```{r api}
-A5_key <- source("~/.eigenwerke/api/api_assignment5.R")
-
-```
-
-## API key
-The API key is a publicly available on the API Explorer (https://developer.ticketmaster.com/api-explorer/v2/) and is stored separately on a file on a local machine. Next we prepare the required libraries for the API and its usage on plots etc.
-
-```{r packages, echo=TRUE, message = FALSE}
-#install.packages("jsonlite")
-#install.packages("httr")
-#install.packages("rlist")
-#install.packages("maps")
-
+# load libraries
 library(maps)
 library(ggplot2)
 library(tidyr)
@@ -35,8 +24,43 @@ library(dplyr)
 library(jsonlite)
 library(httr)
 library(rlist)
+```
+
+# Exercise 1: Setting up a new GitHub repository
+
+>**1.1** Register on github.com in case you have not done this already.
+
+>**1.2** Initialize a new public repository for this assignment on GitHub.
+
+The linked repository can be found at:
+https://github.com/janbesler/Assignment_V_GitHub
+
+# Exercise 2: Getting to know the API
+
+>**2.1** Visit the documentation website for the API provided by ticketmaster.com
+
+>**2.2** Familiarize yourself with the features and functionalities of the Ticketmaster Discovery API. Have a particular look at rate limits.
+
+First we look at the documentation of the Ticketmaster API (https://developer.ticketmaster.com/products-and-docs/apis/getting-started/) to get the necessary information on how the database is structured and what the "rules" are, e.g. rate limits and ToS.
+The rate limit shown on the page lies at 5000 calls per day as of 31/01/2021.
+
+>**2.3** Whithin the scope of this assignment, you do not have to request your own API key. Instead retrieve
+a valid key from the API Explorer. This API key enables you to perform the GET requests needed
+throughout this assignment.
+
+The API key is a publicly available on the API Explorer (https://developer.ticketmaster.com/api-explorer/v2/).
+
+>**2.4** Even though this API key is not secret per se (it is publicly visible onn the API Explorer website),
+please comply to the common secrecy practices discussed in the lecture and the tutorial: Treat the API
+key as a secret token. Your API key should neither appear in the code that you are submitting nor in
+your public GitHub repository.
+
+```{r api}
+A5_key <- source("~/Uni/Data_Science/Project_Management/Assignments_DSPM/api-key.R")
 
 ```
+
+The key is stored separately on a file on a local machine.
 
 ## basic API Interaction
 In the first step the results from the first site are printed and are compiled into a data frame.
