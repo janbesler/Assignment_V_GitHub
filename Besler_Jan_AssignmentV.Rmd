@@ -10,20 +10,11 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ### Setup
-Before starting workspace is cleared and all necessary libraries are loaded.
-```{r libraries, echo=TRUE, message=FALSE, warning=FALSE}
+Before starting workspace is cleared.
+```{r workspace, echo=TRUE, message=FALSE, warning=FALSE}
 # clear workspace
 rm(list = ls())
 
-# load libraries
-library(maps)
-library(ggplot2)
-library(tidyr)
-library(plyr)
-library(dplyr)
-library(jsonlite)
-library(httr)
-library(rlist)
 ```
 
 # Exercise 1: Setting up a new GitHub repository
@@ -55,79 +46,109 @@ please comply to the common secrecy practices discussed in the lecture and the t
 key as a secret token. Your API key should neither appear in the code that you are submitting nor in
 your public GitHub repository.
 
-```{r api}
+```{r api, echo=TRUE, message=FALSE, warning=FALSE}
 A5_key <- source("~/Uni/Data_Science/Project_Management/Assignments_DSPM/api-key.R")
 
 ```
 
 The key is stored separately on a file on a local machine.
 
-## basic API Interaction
+# Exercise 3: Interacting with the API - the basics
+
+>**3.1** Load the packages needed to interact with APIs using R.
+
+``` {r libraries, echo=TRUE, message=FALSE, warning=FALSE}
+# load libraries
+library(maps)
+library(ggplot2)
+library(tidyr)
+library(plyr)
+library(dplyr)
+library(jsonlite)
+library(httr)
+library(rlist)
+```
+
+>**3.2** Perform a first GET request, that searches for event venues in Germany (countryCode = "DE"). Extract
+the content from the response object and inspect the resulting list. Describe what you can see.
+
 In the first step the results from the first site are printed and are compiled into a data frame.
-The output looks like this:
 
 ``` {r api_basic}
-res_venue <- GET(url  = "https://app.ticketmaster.com/discovery/v2/venues.json?",
+res_venue <- GET(url  = "https://app.ticketmaster.com/discovery/v2/venues/",
                     query = list(apikey = A5_key[1],
                                  locale = "*",
                                  countryCode = "DE"))
 content_venue_DE <- jsonlite::fromJSON(content(res_venue, as = "text"))
 df_venue_DE <- data.frame(content_venue_DE$'_embedded'$venues)
 
+df_venue_DE
 ```
 
 If we use the content function on the venue data for Germany we get a list of 19 Variables. But some of the required information is stored in a data frame itself inside the first data frame. This applies for the city-, address- and location-variable.
 
+>**3.3** Extract the name, the city, the postalCode and address, as well as the url and the longitude and
+latitude of the venues to a data frame.
+
 ``` {r api_basic_slicing}
 df_venue_basic <- data.frame(
-            name = df_venue_DE$name,
-            city = df_venue_DE$city$name,
-            postalCode = df_venue_DE$postalCode,
-            address = df_venue_DE$address$line1,
-            url = df_venue_DE$url,
-            longitude = df_venue_DE$location$longitude,
-            latitude = df_venue_DE$location$latitude
+              name = event_venues_cleaned[["_embedded"]][["venues"]][["name"]],
+              city = event_venues_cleaned[["_embedded"]][["venues"]][["city"]][["name"]],
+              postalCode = event_venues_cleaned[["_embedded"]][["venues"]][["postalCode"]],
+              address = event_venues_cleaned[["_embedded"]][["venues"]][["address"]][["line1"]],
+              url = event_venues_cleaned[["_embedded"]][["venues"]][["url"]],
+              longitude = event_venues_cleaned[["_embedded"]][["venues"]][["location"]][["longitude"]],
+              latitude = event_venues_cleaned[["_embedded"]][["venues"]][["location"]][["latitude"]]
         )
 glimpse(df_venue_basic)
 ```
 Now the first 20 values are in the desired standard data frame format.
 
-## API advanced
+# Exercise 4: Interacting with the API - advanced
+>**4.1** Have a closer look at the list element named page. Did your GET request from exercise 3 return all
+event locations in Germany? Obviously not - there are of course much more venues in Germany than
+those contained in this list. Your GET request only yielded the first results page containing the first 20
+out of several thousands of venues.
 
-Since the first basic step only shows the results for the first 20 results, hence the first site. The following part is resolving this problem by iterating the pagenumbers until there are less than 20 values on a page.
+>**4.2** Check the API documentation under the section Venue Search. How can you request the venues from
+the remaining results pages?
 
-From this point onwards only code is shown withou its results, because there is an error on my API request and markdown won't knit the document if don't set eval to false for those chunks. As a result it can't process the required data frames in order to plot the maps.
+The idea is to iterate the page numbers until there are less values on a page than the size of searching.
 
-``` {r api_advanced, eval = FALSE}
+>**4.3** Write a for loop that iterates through the results pages and performs a GET request for all venues
+in Germany. After each iteration, extract the seven variables name, city, postalCode, address, url,
+longitude, and latitude. Join the information in one large data frame.
 
-info_DE <- content(GET(url  = "https://app.ticketmaster.com/discovery/v2/venues.json?",
-                    query = list(apikey = A5_key[1],
-                                 locale = "*",
-                                 countryCode = "DE",
-                                 size = 50)))
-pages_DE <- info_DE$page$totalPages
-N_DE <- round_any(info_DE$page$totalElements, 50, floor)
+From this point on wards only code is shown without its results, because there is an error on my API request and markdown won't knit the document if don't set eval to false for those chunks. As a result it can't process the required data frames in order to plot the maps.
+
+``` {r api_advanced, echo=TRUE, message=FALSE, warning=FALSE}
+
+number_events <- content_venue_DE[[3]]$totalElements
+page_size <- 100
+pages_DE <- floor(number_events/page_size)  # info_DE$page$totalPages
+last_page <- number_events - pages_DE * page_size
 
 df_venue_advanced <- data.frame(
-            name = character(N_DE),
-            city = character(N_DE),
-            postalCode = numeric(N_DE),
-            address = character(N_DE),
-            url = character(N_DE),
-            longitude = numeric(N_DE),
-            latitude = numeric(N_DE),
-            stringsAsFactors = FALSE
+            name = character(number_events),
+            city = character(number_events),
+            postalCode = numeric(number_events),
+            address = character(number_events),
+            url = character(number_events),
+            longitude = rep(NA, number_events),
+            latitude = rep(NA, number_events)
             )
 
-for (i in 1:(pages_DE + 1)) {
-  iterated_results_DE <- GET(url  = "https://app.ticketmaster.com/discovery/v2/venues.json?",
+for (i in 1:pages_DE){
+  iterated_results_DE <- GET(url  = "https://app.ticketmaster.com/discovery/v2/venues/",
                     query = list(apikey = A5_key[1],
                                  locale = "*",
                                  countryCode = "DE",
-                                 size = 50,
-                                 page = i-1))
+                                 size = page_size,
+                                 page = (i-1)
+                           )
+                    )
 
-  iterated_venue_DE <- jsonlite::fromJSON(content(iterated_results_DE, as = "text"))[['_embedded']][['venues']]
+  iterated_venue_DE <- jsonlite::fromJSON(content(iterated_results_DE, as = "text"))
 
   df_venue_advanced[((i-1)*50+1):(i*50),] <- data.frame(
                                            iterated_venue_DE$name,
@@ -144,11 +165,7 @@ for (i in 1:(pages_DE + 1)) {
 df_venue_advanced <- df_venue_advanced[df_venue_advanced$postalCode != 0,]
 
 ```
-#### acknowledging my ignorance 
 
-for some reason I don't fully understand my code stops working with the second last line.
-However it works somehow for the first 200 values until the error "arguments imply differing number of rows: 50, 0" appears, which I assume has something to do with the last page and the less than 50 values on it. I tried to fix this by rounding the number down to a number which can be divided by 50, but this didn't seemed to do the trick.
-But even if it shows an error message, the first 200 results are still processed, these can be used in the next step, the creation of a map. Therefor I leave it as it is.
 
 ## event locations
 
