@@ -266,7 +266,7 @@ glimpse(df_venue_basic)</code></pre>
 <blockquote>
 <p><strong>4.3</strong> Write a for loop that iterates through the results pages and performs a GET request for all venues in Germany. After each iteration, extract the seven variables name, city, postalCode, address, url, longitude, and latitude. Join the information in one large data frame.</p>
 </blockquote>
-<p>From this point on wards only code is shown without its results, because there is an error on my API request and markdown won’t knit the document if don’t set eval to false for those chunks. As a result it can’t process the required data frames in order to plot the maps.</p>
+<p>From this point on wards only code is shown without its results, because there is an error on my API request and markdown won’t knit the document if don’t set “eval = FALSE” for those chunks. As a result it can’t process the required data frames in order to plot the maps. Yet If I don’t include this option, the code doesn’t run at all. I would be glad to hints why this does not work. My research on the problem did not help, because it only refers to a “replacement has length zero” error for which all the manual corrections work fine, but the automated process of knitting doesn’t.</p>
 <pre class="r"><code>number_events &lt;- content_venue_DE[[3]]$totalElements
 page_size &lt;- 100
 pages_DE &lt;- floor(number_events/page_size)
@@ -293,7 +293,7 @@ for (i in 1:5){
                                  page = (i-1)  # start on page 0
                            )
                     )
-# for some unknown reason the loop gives out an error for all pages, hence I capped it at 10 pages.
+# for some unknown reason the loop gives out an error for all pages, hence I capped it at 5 pages.
 # for manual execution this works perfectly fine, though while knitting I always get a &quot;error in x[[jj]][iseq] &lt;- vjj : replacement has length zero&quot; error
     
   iterated_venue_DE &lt;- jsonlite::fromJSON(content(iterated_results_DE, as = &quot;text&quot;))
@@ -356,7 +356,9 @@ ger_venue &lt;- ggplot() +
   labs(title = &quot;Event locations across Germany&quot;, caption = &quot;Source: ticketmaster.com&quot;) +
   theme(title = element_text(size=8, face=&#39;bold&#39;),
   plot.caption = element_text(face = &quot;italic&quot;)) +
-  geom_point(data = map_DE, aes(x = longitude, y = latitude), na.rm = TRUE)
+  geom_point(data = map_DE, aes(x = longitude, y = latitude), na.rm = TRUE)</code></pre>
+<p>show the map:</p>
+<pre class="r"><code># the knitting is interrupted if I do not include the &quot;eval = FALSE&quot; option, executing it manually though produces a graph.
 ger_venue</code></pre>
 </div>
 </div>
@@ -440,11 +442,11 @@ iterated_results_BE &lt;- GET(url  = &quot;https://app.ticketmaster.com/discover
     df_venue_advanced[(pages_BE * page_size + 1):nrow(df_venue_advanced),5] &lt;- iterated_venue_BE[[&quot;_embedded&quot;]][[&quot;venues&quot;]][[&quot;url&quot;]]
 
 # creating the graph
+map_BE &lt;- na.omit(df_venue_advanced)
 map_BE &lt;- map_BE[!(df_venue_advanced$longitude &lt; &quot;5.866944&quot;),] #west
 map_BE &lt;- map_BE[!(df_venue_advanced$longitude &gt; &quot;6.23&quot;),] #east
 map_BE &lt;- map_BE[!(df_venue_advanced$latitude &lt; &quot;49.3&quot;),] #south
 map_BE &lt;- map_BE[!(df_venue_advanced$latitude &gt; &quot;51.2952&quot;),] #north
-map_BE &lt;- na.omit(map_BE)
 
 bel_venue &lt;- ggplot() +
     geom_polygon(
@@ -454,7 +456,9 @@ bel_venue &lt;- ggplot() +
   labs(title = &quot;Event locations across Belgium&quot;, caption = &quot;Source: ticketmaster.com&quot;) +
   theme(title = element_text(size=8, face=&#39;bold&#39;),
   plot.caption = element_text(face = &quot;italic&quot;)) +
-  geom_point(data = map_BE, aes(x = longitude, y = latitude), na.rm = TRUE)
+  geom_point(data = map_BE, aes(x = longitude, y = latitude), na.rm = TRUE)</code></pre>
+<p>show the map:</p>
+<pre class="r"><code># the knitting is interrupted if I do not include the &quot;eval = FALSE&quot; option, executing it manually though produces a graph.
 bel_venue</code></pre>
 </div>
 
