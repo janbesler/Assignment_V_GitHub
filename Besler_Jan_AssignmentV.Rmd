@@ -232,155 +232,84 @@ ger_venue
 first country on the list is Belgium
 
 ``` {r countries_belgium, eval = FALSE}
+# getting the Belgium specific data
+content_venue_BE <- GET(url  = "https://app.ticketmaster.com/discovery/v2/venues/",
+                    query = list(apikey = A5_key[1],
+                                 locale = "*",
+                                 countryCode = "BE"
+                           )
+                    )
 
-info_BE <- content(GET(url  = "https://app.ticketmaster.com/discovery/v2/venues.json?",
+content_venue_BE <- jsonlite::fromJSON(content(content_venue_BE, as = "text"))
+
+# keep the same setup as previously
+number_events <- content_venue_BE[[3]]$totalElements
+page_size <- 100
+pages <- floor(number_events/page_size)
+last_page <- number_events - pages * page_size
+
+# creating the data frame to fill
+df_venue_advanced <- data.frame(
+            name = character(number_events),
+            city = character(number_events),
+            postalCode = numeric(number_events),
+            address = character(number_events),
+            url = character(number_events),
+            longitude = rep(NA, number_events),
+            latitude = rep(NA, number_events)
+            )
+
+# the loop for accessing each page
+for (i in 1:pages){
+  iterated_results_BE <- GET(url  = "https://app.ticketmaster.com/discovery/v2/venues/",
                     query = list(apikey = A5_key[1],
                                  locale = "*",
                                  countryCode = "BE",
-                                 size = 50)))
-pages_BE <- info_BE$page$totalPages
-N_BE <- round_any(info_BE$page$totalElements, 50, floor) #gives the required solution from the Assignment
+                                 size = page_size,
+                                 page = (i-1)
+                           )
+                    )
 
-df_venue_BE <- data.frame(
-            name = character(N_BE),
-            city = character(N_BE),
-            postalCode = numeric(N_BE),
-            address = character(N_BE),
-            url = character(N_BE),
-            longitude = numeric(N_BE),
-            latitude = numeric(N_BE),
-            stringsAsFactors = FALSE
-            )
+  iterated_venue_BE <- jsonlite::fromJSON(content(iterated_results_BE, as = "text"))
 
-for (i in 1:(N_BE+1)) {
-  iterated_results_BE <- GET(url  = "https://app.ticketmaster.com/discovery/v2/venues.json?",
+# start filling the database  
+    df_venue_advanced[((i - 1) * page_size + 1):(i * page_size),1] <- iterated_venue_BE[["_embedded"]][["venues"]][["name"]]
+    df_venue_advanced[((i - 1) * page_size + 1):(i * page_size),2] <- iterated_venue_BE[["_embedded"]][["venues"]][["city"]][["name"]]
+    df_venue_advanced[((i - 1) * page_size + 1):(i * page_size),3] <- iterated_venue_BE[["_embedded"]][["venues"]][["postalCode"]]
+    df_venue_advanced[((i - 1) * page_size + 1):(i * page_size),4] <- iterated_venue_BE[["_embedded"]][["venues"]][["address"]][["line1"]]
+    df_venue_advanced[((i - 1) * page_size + 1):(i * page_size),5] <- iterated_venue_BE[["_embedded"]][["venues"]][["url"]]
+      if (!is.null(iterated_venue_BE[["_embedded"]][["venues"]][["location"]][["longitude"]])){
+        df_venue_advanced[((i - 1) * page_size + 1):(i * page_size),6] <- iterated_venue_BE[["_embedded"]][["venues"]][["location"]][["longitude"]]
+        df_venue_advanced[((i - 1) * page_size + 1):(i * page_size),7] <- iterated_venue_BE[["_embedded"]][["venues"]][["location"]][["latitude"]]
+      }
+  
+  Sys.sleep(2)
+}
+
+# repeat the process for the last page
+iterated_results_BE <- GET(url  = "https://app.ticketmaster.com/discovery/v2/venues/",
                     query = list(apikey = A5_key[1],
                                  locale = "*",
                                  countryCode = "BE",
-                                 size = 50,
-                                 page = i-1))
+                                 size = page_size,
+                                 page = pages
+                           )
+                    )
 
-  iterated_venue_BE <- jsonlite::fromJSON(content(iterated_results_BE, as = "text"))[['_embedded']][['venues']]
+  iterated_venue_BE <- jsonlite::fromJSON(content(iterated_results_BE, as = "text"))
 
-  df_venue_BE[((i-1)*50+1):(i*50),] <- data.frame(
-                                           iterated_venue_BE$name,
-                                           iterated_venue_BE$city$name,
-                                           iterated_venue_BE$postalCode,
-                                           iterated_venue_BE$address$line1,
-                                           iterated_venue_BE$url,
-                                           as.double(iterated_venue_BE$location$longitude),
-                                           as.double(iterated_venue_BE$location$latitude)
-                                           )
-  Sys.sleep(0.75)
-}
+# start filling the database  
+    df_venue_advanced[(pages_BE * page_size + 1):nrow(df_venue_advanced),1] <- iterated_venue_BE[["_embedded"]][["venues"]][["name"]]
+    df_venue_advanced[(pages_BE * page_size + 1):nrow(df_venue_advanced),2] <- iterated_venue_BE[["_embedded"]][["venues"]][["city"]][["name"]]
+    df_venue_advanced[(pages_BE * page_size + 1):nrow(df_venue_advanced),3] <- iterated_venue_BE[["_embedded"]][["venues"]][["postalCode"]]
+    df_venue_advanced[(pages_BE * page_size + 1):nrow(df_venue_advanced),4] <- iterated_venue_BE[["_embedded"]][["venues"]][["address"]][["line1"]]
+    df_venue_advanced[(pages_BE * page_size + 1):nrow(df_venue_advanced),5] <- iterated_venue_BE[["_embedded"]][["venues"]][["url"]]
 
-df_venue_BE <- df_venue_BE[df_venue_BE$postalCode != 0,]
-```
-
-The second country is Sweden.
-
-``` {r countries_sweden, eval = FALSE}
-info_SE <- content(GET(url  = "https://app.ticketmaster.com/discovery/v2/venues.json?",
-                    query = list(apikey = A5_key[1],
-                                 locale = "*",
-                                 countryCode = "SE",
-                                 size = 50)))
-pages_SE <- info_SE$page$totalPages
-N_SE <- round_any(info_SE$page$totalElements, 50, floor) #gives the required solution from the Assignment
-
-df_venue_SE <- data.frame(
-            name = character(N_SE),
-            city = character(N_SE),
-            postalCode = numeric(N_SE),
-            address = character(N_SE),
-            url = character(N_SE),
-            longitude = numeric(N_SE),
-            latitude = numeric(N_SE),
-            stringsAsFactors = FALSE
-            )
-
-for (i in 1:(N_SE+1)) {
-  iterated_results_SE <- GET(url  = "https://app.ticketmaster.com/discovery/v2/venues.json?",
-                    query = list(apikey = A5_key[1],
-                                 locale = "*",
-                                 countryCode = "SE",
-                                 size = 50,
-                                 page = i-1))
-
-  iterated_venue_SE <- jsonlite::fromJSON(content(iterated_results_SE, as = "text"))[['_embedded']][['venues']]
-
-  df_venue_SE[((i-1)*50+1):(i*50),] <- data.frame(
-                                           iterated_venue_SE$name,
-                                           iterated_venue_SE$city$name,
-                                           iterated_venue_SE$postalCode,
-                                           iterated_venue_SE$address$line1,
-                                           iterated_venue_SE$url,
-                                           as.double(iterated_venue_SE$location$longitude),
-                                           as.double(iterated_venue_SE$location$latitude)
-                                           )
-  Sys.sleep(0.75)
-}
-
-df_venue_SE <- df_venue_SE[df_venue_SE$postalCode != 0,]
-```
-
-The third country is Italy
-
-``` {r countries_italy, eval = FALSE}
-info_IT <- content(GET(url  = "https://app.ticketmaster.com/discovery/v2/venues.json?",
-                    query = list(apikey = A5_key[1],
-                                 locale = "*",
-                                 countryCode = "IT",
-                                 size = 50)))
-pages_IT <- info_IT$page$totalPages
-N_IT <- round_any(info_IT$page$totalElements, 50, floor) #gives the required solution from the Assignment
-
-df_venue_IT <- data.frame(
-            name = character(N_IT),
-            city = character(N_IT),
-            postalCode = numeric(N_IT),
-            address = character(N_IT),
-            url = character(N_IT),
-            longitude = numeric(N_IT),
-            latitude = numeric(N_IT),
-            stringsAsFactors = FALSE
-            )
-
-for (i in 1:(N_IT+1)) {
-  iterated_results_IT <- GET(url  = "https://app.ticketmaster.com/discovery/v2/venues.json?",
-                    query = list(apikey = A5_key[1],
-                                 locale = "*",
-                                 countryCode = "IT",
-                                 size = 50,
-                                 page = i-1))
-
-  iterated_venue_IT <- jsonlite::fromJSON(content(iterated_results_IT, as = "text"))[['_embedded']][['venues']]
-
-  df_venue_IT[((i-1)*50+1):(i*50),] <- data.frame(
-                                           iterated_venue_IT$name,
-                                           iterated_venue_IT$city$name,
-                                           iterated_venue_IT$postalCode,
-                                           iterated_venue_IT$address$line1,
-                                           iterated_venue_IT$url,
-                                           as.double(iterated_venue_IT$location$longitude),
-                                           as.double(iterated_venue_IT$location$latitude)
-                                           )
-  Sys.sleep(0.75)
-}
-
-df_venue_IT <- df_venue_IT[df_venue_IT$postalCode != 0,] 
-
-```
-
-
-
-``` {r countries_maps, eval = FALSE}
-
-map_BE <- na.omit(df_venue_BE)
-map_BE <- map_BE[!(df_venue_BE$longitude < "5.866944"),] #west
-map_BE <- map_BE[!(df_venue_BE$longitude > "6.23"),] #east
-map_BE <- map_BE[!(df_venue_BE$latitude < "49.3"),] #south
-map_BE <- map_BE[!(df_venue_BE$latitude > "51.2952"),] #north
+# creating the graph
+map_BE <- map_BE[!(df_venue_advanced$longitude < "5.866944"),] #west
+map_BE <- map_BE[!(df_venue_advanced$longitude > "6.23"),] #east
+map_BE <- map_BE[!(df_venue_advanced$latitude < "49.3"),] #south
+map_BE <- map_BE[!(df_venue_advanced$latitude > "51.2952"),] #north
 map_BE <- na.omit(map_BE)
 
 bel_venue <- ggplot() +
@@ -393,41 +322,4 @@ bel_venue <- ggplot() +
   plot.caption = element_text(face = "italic")) +
   geom_point(data = map_BE, aes(x = longitude, y = latitude), na.rm = TRUE)
 bel_venue
-
-map_SE <- na.omit(df_venue_SE)
-map_SE <- map_SE[!(df_venue_SE$longitude < "11.113"),] #west
-map_SE <- map_SE[!(df_venue_SE$longitude > "24.155833"),] #east
-map_SE <- map_SE[!(df_venue_SE$latitude < "55.3369"),] #south
-map_SE <- map_SE[!(df_venue_SE$latitude > "69.06"),] # north
-map_SE <- na.omit(df_venue_SE)
-
-se_venue <- ggplot() +
-  geom_polygon(
-  aes(x = long, y = lat, group = group), data = map_data("world", region = "Sweden"),
-  fill = "grey90",color = "black") +
-  theme_void() + coord_quickmap() +
-  labs(title = "Event locations across Sweden", caption = "Source: ticketmaster.com") +
-  theme(title = element_text(size=8, face='bold'),
-  plot.caption = element_text(face = "italic")) +
-  geom_point(data = map_SE, aes(x = longitude, y = latitude), na.rm = TRUE)
-se_venue
-
-map_IT <- na.omit(df_venue_IT)
-map_IT <- map_IT[!(df_venue_IT$longitude < "6.37"),] #west
-map_IT <- map_IT[!(df_venue_IT$longitude > "18.31"),] #east
-map_IT <- map_IT[!(df_venue_IT$latitude < "37.56"),] #south
-map_IT <- map_IT[!(df_venue_IT$latitude > "47.5"),] #north
-map_IT <- na.omit(df_venue_IT)
-
-it_venue <- ggplot() +
-  geom_polygon(
-  aes(x = long, y = lat, group = group), data = map_data("world", region = "Italy"),
-  fill = "grey90",color = "black") +
-  theme_void() + coord_quickmap() +
-  labs(title = "Event locations across Italy", caption = "Source: ticketmaster.com") +
-  theme(title = element_text(size=8, face='bold'),
-  plot.caption = element_text(face = "italic")) +
-  geom_point(data = map_IT, aes(x = longitude, y = latitude), na.rm = TRUE)
-it_venue
-
 ```
