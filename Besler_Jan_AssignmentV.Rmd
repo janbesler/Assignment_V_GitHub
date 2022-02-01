@@ -47,7 +47,7 @@ key as a secret token. Your API key should neither appear in the code that you a
 your public GitHub repository.
 
 ```{r api, echo=TRUE, message=FALSE, warning=FALSE}
-A5_key <- source("~/Uni/Data_Science/Project_Management/Assignments_DSPM/api-key.R")
+source("~/Uni/Data_Science/Project_Management/Assignments_DSPM/tima_key.R")
 
 ```
 
@@ -76,13 +76,11 @@ In the first step the results from the first site are printed and are compiled i
 
 ``` {r api_basic}
 res_venue <- GET(url  = "https://app.ticketmaster.com/discovery/v2/venues/",
-                    query = list(apikey = A5_key[1],
+                    query = list(apikey = tima_key,
                                  locale = "*",
                                  countryCode = "DE"))
 content_venue_DE <- jsonlite::fromJSON(content(res_venue, as = "text"))
-df_venue_DE <- data.frame(content_venue_DE$'_embedded'$venues)
 
-df_venue_DE
 ```
 
 If we use the content function on the venue data for Germany we get a list of 19 Variables. But some of the required information is stored in a data frame itself inside the first data frame. This applies for the city-, address- and location-variable.
@@ -92,13 +90,13 @@ latitude of the venues to a data frame.
 
 ``` {r api_basic_slicing}
 df_venue_basic <- data.frame(
-              name = event_venues_cleaned[["_embedded"]][["venues"]][["name"]],
-              city = event_venues_cleaned[["_embedded"]][["venues"]][["city"]][["name"]],
-              postalCode = event_venues_cleaned[["_embedded"]][["venues"]][["postalCode"]],
-              address = event_venues_cleaned[["_embedded"]][["venues"]][["address"]][["line1"]],
-              url = event_venues_cleaned[["_embedded"]][["venues"]][["url"]],
-              longitude = event_venues_cleaned[["_embedded"]][["venues"]][["location"]][["longitude"]],
-              latitude = event_venues_cleaned[["_embedded"]][["venues"]][["location"]][["latitude"]]
+              name = content_venue_DE[["_embedded"]][["venues"]][["name"]],
+              city = content_venue_DE[["_embedded"]][["venues"]][["city"]][["name"]],
+              postalCode = content_venue_DE[["_embedded"]][["venues"]][["postalCode"]],
+              address = content_venue_DE[["_embedded"]][["venues"]][["address"]][["line1"]],
+              url = content_venue_DE[["_embedded"]][["venues"]][["url"]],
+              longitude = content_venue_DE[["_embedded"]][["venues"]][["location"]][["longitude"]],
+              latitude = content_venue_DE[["_embedded"]][["venues"]][["location"]][["latitude"]]
         )
 glimpse(df_venue_basic)
 ```
@@ -121,11 +119,10 @@ longitude, and latitude. Join the information in one large data frame.
 
 From this point on wards only code is shown without its results, because there is an error on my API request and markdown won't knit the document if don't set eval to false for those chunks. As a result it can't process the required data frames in order to plot the maps.
 
-``` {r api_advanced, echo=TRUE, message=FALSE, warning=FALSE}
-
+``` {r api_advanced, echo=TRUE, message=FALSE, warning=FALSE, eval = FALSE}
 number_events <- content_venue_DE[[3]]$totalElements
 page_size <- 100
-pages_DE <- floor(number_events/page_size)  # info_DE$page$totalPages
+pages_DE <- floor(number_events/page_size)
 last_page <- number_events - pages_DE * page_size
 
 # creating the data frame to fill
@@ -140,27 +137,29 @@ df_venue_advanced <- data.frame(
             )
 
 # the loop for accessing each page
-for (i in 1:pages_DE){
+for (i in 1:5){
   iterated_results_DE <- GET(url  = "https://app.ticketmaster.com/discovery/v2/venues/",
-                    query = list(apikey = A5_key[1],
+                    query = list(apikey = tima_key,
                                  locale = "*",
                                  countryCode = "DE",
                                  size = page_size,
-                                 page = (i-1)
+                                 page = (i-1)  # start on page 0
                            )
                     )
-
+# for some unknown reason the loop gives out an error for all pages, hence I capped it at 10 pages.
+# for manual execution this works perfectly fine, though while knitting I always get a "error in x[[jj]][iseq] <- vjj : replacement has length zero" error
+    
   iterated_venue_DE <- jsonlite::fromJSON(content(iterated_results_DE, as = "text"))
 
 # start filling the database  
-    df_venue_advanced[((i - 1) * page_size + 1):(i * page_size),1] <- iterated_venue_DE[["_embedded"]][["venues"]][["name"]]
+    df_venue_advanced[((i-1)*page_size + 1):(i*page_size),1] <- iterated_venue_DE[["_embedded"]][["venues"]][["name"]]
     df_venue_advanced[((i - 1) * page_size + 1):(i * page_size),2] <- iterated_venue_DE[["_embedded"]][["venues"]][["city"]][["name"]]
     df_venue_advanced[((i - 1) * page_size + 1):(i * page_size),3] <- iterated_venue_DE[["_embedded"]][["venues"]][["postalCode"]]
     df_venue_advanced[((i - 1) * page_size + 1):(i * page_size),4] <- iterated_venue_DE[["_embedded"]][["venues"]][["address"]][["line1"]]
     df_venue_advanced[((i - 1) * page_size + 1):(i * page_size),5] <- iterated_venue_DE[["_embedded"]][["venues"]][["url"]]
       if (!is.null(iterated_venue_DE[["_embedded"]][["venues"]][["location"]][["longitude"]])){
-        df_venue_advanced[((i - 1) * page_size + 1):(i * page_size),6] <- iterated_venue_DE[["_embedded"]][["venues"]][["location"]][["longitude"]]
-        df_venue_advanced[((i - 1) * page_size + 1):(i * page_size),7] <- iterated_venue_DE[["_embedded"]][["venues"]][["location"]][["latitude"]]
+        df_venue_advanced[((i - 1) * page_size + 1):(i * page_size),6] <- as.double(iterated_venue_DE[["_embedded"]][["venues"]][["location"]][["longitude"]])
+        df_venue_advanced[((i - 1) * page_size + 1):(i * page_size),7] <- as.double(iterated_venue_DE[["_embedded"]][["venues"]][["location"]][["latitude"]])
       }
   
   Sys.sleep(2)
@@ -168,7 +167,7 @@ for (i in 1:pages_DE){
 
 # repeat the process for the last page
 iterated_results_DE <- GET(url  = "https://app.ticketmaster.com/discovery/v2/venues/",
-                    query = list(apikey = A5_key[1],
+                    query = list(apikey = tima_key,
                                  locale = "*",
                                  countryCode = "DE",
                                  size = page_size,
@@ -190,7 +189,7 @@ iterated_results_DE <- GET(url  = "https://app.ticketmaster.com/discovery/v2/ven
 >**4.4** The resulting data frame should look something like this (note that the exact number of search results
 may have changed since this document has been last modified):
 
-```{r de-venue}
+```{r de-venue, echo=TRUE, message=FALSE, warning=FALSE, eval = FALSE}
 glimpse(df_venue_advanced)
 ```
 
@@ -203,14 +202,12 @@ locations of the event venues across Germany.
 Set coordinate values to NA where the value of longitude is outside the range (5.866944, 15.043611)
 or where the value of latitude is outside the range (47.271679, 55.0846).
 
-``` {r DE_plot, eval = FALSE}
+``` {r DE_plot, echo=TRUE, message=FALSE, warning=FALSE, eval = FALSE}
 map_DE <- na.omit(df_venue_advanced)
 map_DE <- map_DE[!(df_venue_advanced$longitude < "5.866944"),] 
 map_DE <- map_DE[!(df_venue_advanced$longitude > "15.043611"),] 
 map_DE <- map_DE[!(df_venue_advanced$latitude < "47.271679"),]
 map_DE <- map_DE[!(df_venue_advanced$latitude > "55.0846"),]
-# map_DE <- map_DE[df_venue_advanced$longitude != 0,]
-# map_DE <- map_DE[df_venue_advanced$latitude != 0,]
 
 ger_venue <- ggplot() +
   geom_polygon(
@@ -221,9 +218,12 @@ ger_venue <- ggplot() +
   theme(title = element_text(size=8, face='bold'),
   plot.caption = element_text(face = "italic")) +
   geom_point(data = map_DE, aes(x = longitude, y = latitude), na.rm = TRUE)
-ger_venue
- 
 ```
+show the map:
+```{r ger_map}
+ger_venue
+```
+
 
 # Exercise 6: Event locations in other countries
 
@@ -231,10 +231,10 @@ ger_venue
 
 first country on the list is Belgium
 
-``` {r countries_belgium, eval = FALSE}
+``` {r countries_belgium, echo=TRUE, message=FALSE, warning=FALSE, eval = FALSE}
 # getting the Belgium specific data
 content_venue_BE <- GET(url  = "https://app.ticketmaster.com/discovery/v2/venues/",
-                    query = list(apikey = A5_key[1],
+                    query = list(apikey = tima_key,
                                  locale = "*",
                                  countryCode = "BE"
                            )
@@ -260,16 +260,16 @@ df_venue_advanced <- data.frame(
             )
 
 # the loop for accessing each page
-for (i in 1:pages){
+for (i in 2:5){
   iterated_results_BE <- GET(url  = "https://app.ticketmaster.com/discovery/v2/venues/",
-                    query = list(apikey = A5_key[1],
+                    query = list(apikey = tima_key,
                                  locale = "*",
                                  countryCode = "BE",
                                  size = page_size,
                                  page = (i-1)
                            )
                     )
-
+# same problem as with Germany, hence it is capped at 5 iterations.
   iterated_venue_BE <- jsonlite::fromJSON(content(iterated_results_BE, as = "text"))
 
 # start filling the database  
@@ -279,8 +279,8 @@ for (i in 1:pages){
     df_venue_advanced[((i - 1) * page_size + 1):(i * page_size),4] <- iterated_venue_BE[["_embedded"]][["venues"]][["address"]][["line1"]]
     df_venue_advanced[((i - 1) * page_size + 1):(i * page_size),5] <- iterated_venue_BE[["_embedded"]][["venues"]][["url"]]
       if (!is.null(iterated_venue_BE[["_embedded"]][["venues"]][["location"]][["longitude"]])){
-        df_venue_advanced[((i - 1) * page_size + 1):(i * page_size),6] <- iterated_venue_BE[["_embedded"]][["venues"]][["location"]][["longitude"]]
-        df_venue_advanced[((i - 1) * page_size + 1):(i * page_size),7] <- iterated_venue_BE[["_embedded"]][["venues"]][["location"]][["latitude"]]
+        df_venue_advanced[((i - 1) * page_size + 1):(i * page_size),6] <- as.double(iterated_venue_BE[["_embedded"]][["venues"]][["location"]][["longitude"]])
+        df_venue_advanced[((i - 1) * page_size + 1):(i * page_size),7] <- as.double(iterated_venue_BE[["_embedded"]][["venues"]][["location"]][["latitude"]])
       }
   
   Sys.sleep(2)
@@ -288,7 +288,7 @@ for (i in 1:pages){
 
 # repeat the process for the last page
 iterated_results_BE <- GET(url  = "https://app.ticketmaster.com/discovery/v2/venues/",
-                    query = list(apikey = A5_key[1],
+                    query = list(apikey = tima_key,
                                  locale = "*",
                                  countryCode = "BE",
                                  size = page_size,
@@ -306,11 +306,11 @@ iterated_results_BE <- GET(url  = "https://app.ticketmaster.com/discovery/v2/ven
     df_venue_advanced[(pages_BE * page_size + 1):nrow(df_venue_advanced),5] <- iterated_venue_BE[["_embedded"]][["venues"]][["url"]]
 
 # creating the graph
+map_BE <- na.omit(df_venue_advanced)
 map_BE <- map_BE[!(df_venue_advanced$longitude < "5.866944"),] #west
 map_BE <- map_BE[!(df_venue_advanced$longitude > "6.23"),] #east
 map_BE <- map_BE[!(df_venue_advanced$latitude < "49.3"),] #south
 map_BE <- map_BE[!(df_venue_advanced$latitude > "51.2952"),] #north
-map_BE <- na.omit(map_BE)
 
 bel_venue <- ggplot() +
     geom_polygon(
@@ -321,5 +321,8 @@ bel_venue <- ggplot() +
   theme(title = element_text(size=8, face='bold'),
   plot.caption = element_text(face = "italic")) +
   geom_point(data = map_BE, aes(x = longitude, y = latitude), na.rm = TRUE)
+```
+show the map:
+```{r bel_map}
 bel_venue
 ```
