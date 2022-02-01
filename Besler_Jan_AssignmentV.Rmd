@@ -67,6 +67,7 @@ library(dplyr)
 library(jsonlite)
 library(httr)
 library(rlist)
+library(knitr)
 ```
 
 >**3.2** Perform a first GET request, that searches for event venues in Germany (countryCode = "DE"). Extract
@@ -225,6 +226,8 @@ show the map:
 ger_venue
 ```
 
+Since the map can't be shown the normal way, I took a screenshot while doing the steps manually.
+![Germany venues graphic](20220201_114001.png)
 
 # Exercise 6: Event locations in other countries
 
@@ -328,3 +331,7 @@ show the map:
 # the knitting is interrupted if I do not include the "eval = FALSE" option, executing it manually though produces a graph.
 bel_venue
 ```
+
+Since the map can't be shown the normal way, I took a screenshot while doing the steps manually.
+
+![Belgium venues graphic](20220201_114137.png)
